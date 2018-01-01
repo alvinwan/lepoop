@@ -9,10 +9,15 @@ from subprocess import Popen
 from subprocess import PIPE
 from subprocess import STDOUT
 from collections import defaultdict
+from itertools import chain
+import glob
 
 
 init()
-__all__ = ('get_package_groups', 'get_valid_pip_history', 'print_colored')
+__all__ = ('get_package_groups', 'get_valid_pip_history', 'colored')
+
+
+flatten = chain.from_iterable
 
 
 def colored(string):
@@ -70,8 +75,17 @@ def is_invalid_command(command):
     packages = set([p.split('==')[0] for p in packages])
     return (action == 'install' and not all_packages & packages) or \
         (action == 'uninstall' and not packages - all_packages) or \
-        (action == 'download') or \
+        (action == 'download' and not any(
+            [get_associated_file(package) for package in packages])) or \
         (action not in ('install', 'uninstall', 'download'))
+
+
+def get_associated_file(package_key):
+    """Find file associated with the package key."""
+    package_key = package_key.replace('-', '_')
+    for path in flatten([glob.iglob('*.whl'), glob.iglob('*.tar.gz')]):
+        if path.startswith(package_key):  # TODO: more specific format check
+            return path
 
 
 def get_pip_package_key(candidate):

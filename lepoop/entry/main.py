@@ -1,7 +1,8 @@
 """Entry points manager for command line utility."""
 
-from ..uninstall import get_uninstall_candidates
-from ..reinstall import get_reinstall_candidates
+from ..install import get_uninstall_candidates
+from ..uninstall import get_reinstall_candidates
+from ..download import get_file_candidates
 from ..utils import colored
 from ..utils import get_valid_pip_history
 from .alias import poop_alias
@@ -23,18 +24,16 @@ def main():
     try:
         last_valid_pip_command = get_valid_pip_history()[0]
         last_valid_pip_action = last_valid_pip_command.split()[1]
+        command = ''
         if last_valid_pip_action == 'install':
-            list_of_candidates = get_uninstall_candidates()
-            candidates = ' '.join(list_of_candidates)
-            proposed_command = 'pip uninstall {}'.format(candidates)
+            command = 'pip uninstall -y {}'.format(get_uninstall_candidates())
         elif last_valid_pip_action == 'uninstall':
-            list_of_candidates = get_reinstall_candidates()
-            candidates = ' '.join(list_of_candidates)
-            proposed_command = 'pip install {}'.format(candidates)
+            command = 'pip install {}'.format(get_reinstall_candidates())
         elif last_valid_pip_action == 'download':
-            pass
-        input(colored('`{}` [enter/ctrl+c]'.format(proposed_command)))
-        event = Popen(proposed_command.split())
+            command = 'rm {}'.format(get_file_candidates())
+        assert command, 'Already pooped.'
+        input(colored('`{}` [enter/ctrl+c]'.format(command)))
+        event = Popen(command.split())
         _, error = event.communicate()
     except AssertionError as e:
         print(Fore.RED + str(e))
