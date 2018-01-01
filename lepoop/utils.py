@@ -6,7 +6,9 @@ from subprocess import Popen
 from subprocess import PIPE
 from subprocess import STDOUT
 from collections import defaultdict
-import re
+
+
+__all__ = ('get_package_groups', 'get_pip_history')
 
 
 def get_package_groups():
@@ -16,14 +18,34 @@ def get_package_groups():
     time is formatted as datetime objects.
     """
     mapping = defaultdict(lambda: [])
-    for package_name_version, mod_time in get_packages_creation_times():
-        mapping[mod_time].append(package_name_version)
+    for package_name_version, creation_time in get_packages_creation_times():
+        mapping[creation_time].append(package_name_version)
 
     result = []
-    for mod_time in sorted(mapping, reverse=True):
-        pretty_mod_time = datetime.datetime.fromtimestamp(mod_time)
-        result.append((pretty_mod_time, mapping[mod_time]))
+    for creation_time in sorted(mapping, reverse=True):
+        pretty_mod_time = datetime.datetime.fromtimestamp(creation_time)
+        result.append((pretty_mod_time, mapping[creation_time]))
     return result
+
+
+def get_pip_history():
+    """Get all pip commands logged in history."""
+    return [command for command in get_bash_history()
+            if command.strip().startswith('pip')]
+
+
+def get_bash_history():
+    """Get bash history.
+
+    Items are sorted in reverse order, starting with the most recent.
+    """
+    shell_command = 'bash -i -c "history -r; history"'
+    event = Popen(shell_command, shell=True, stdin=PIPE, stdout=PIPE,
+                  stderr=STDOUT)
+    output, error = event.communicate()
+    output = output.decode('utf-8').replace("'\n", '\n')  # clean up weirdness
+    commands = [' '.join(str(line).split()[1:]) for line in output.splitlines()]
+    return commands[::-1]
 
 
 def get_packages_creation_times():
@@ -35,8 +57,8 @@ def get_packages_creation_times():
     packages = []
     for package in pip.get_installed_distributions():
         package_name_version = str(package)
-        package_location = _get_module_dir(package)
-        creation_time = creation_date(package_location)
+        package_location = get_package_location(package)
+        creation_time = get_creation_date(package_location)
         packages.append([
             package_name_version,
             creation_time,
@@ -44,18 +66,7 @@ def get_packages_creation_times():
     return packages
 
 
-def get_bash_history():
-    """Get bash history."""
-    shell_command = 'bash -i -c "history -r; history"'
-    event = Popen(shell_command, shell=True, stdin=PIPE, stdout=PIPE,
-                  stderr=STDOUT)
-    output, error = event.communicate()
-    regex = r" +\d+ +(.*?)\\n"
-    commands = [match.groups() for match in re.finditer(regex, str(output))]
-    return commands
-
-
-def _get_module_dir(package):
+def get_package_location(package):
     """Get module directory from the module information.
 
     Original function taken from StackOverflow:
@@ -65,6 +76,7 @@ def _get_module_dir(package):
         module_dir = next(package._get_metadata('top_level.txt'))
         package_location = os.path.join(package.location, module_dir)
         os.stat(package_location)
+        return package_location
     except (StopIteration, OSError):
         pass
     package_location = os.path.join(package.location, package.key)
@@ -73,7 +85,7 @@ def _get_module_dir(package):
     return package.location
 
 
-def creation_date(path_to_file):
+def get_creation_date(path_to_file):
     """
     Try to get the date that a file was created, falling back to when it was
     last modified if that isn't possible.
