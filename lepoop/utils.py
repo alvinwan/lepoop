@@ -12,7 +12,7 @@ from collections import defaultdict
 
 
 init()
-__all__ = ('get_package_groups', 'get_pip_history', 'print_colored')
+__all__ = ('get_package_groups', 'get_valid_pip_history', 'print_colored')
 
 
 def colored(string):
@@ -39,10 +39,67 @@ def get_package_groups():
     return result
 
 
+def get_valid_pip_history():
+    """Looks only at valid pip commands logged in history.
+
+    See `is_valid_command` for details on `valid` commands.
+    """
+    commands = get_pip_history()
+    for command in commands:
+        if is_invalid_command(command):
+            commands.remove(command)
+    return commands
+
+
+def is_invalid_command(command):
+    """Check if the given command is valid.
+
+    Details on what constitutes a `valid` command:
+    - install: If none of the packages are still installed, ignore it
+    - uninstall: If all of the packages are installed, ignore it
+    - download: If no tars or wheels are found in the current directory,
+                related to the specified packages, ignore it
+
+    Any other pip command is unsupported, as it does not make sense to undo
+    those functions.
+    """
+    all_packages = set(get_pip_package_key(package) for package
+                       in pip.get_installed_distributions())
+    action = get_pip_command_action(command)
+    packages = get_pip_command_packages(command)
+    packages = set([p.split('==')[0] for p in packages])
+    return (action == 'install' and not all_packages & packages) or \
+        (action == 'uninstall' and not packages - all_packages) or \
+        (action == 'download') or \
+        (action not in ('install', 'uninstall', 'download'))
+
+
+def get_pip_package_key(candidate):
+    """Get package key for the provided string.
+
+    The string may be a name and version.
+    """
+    return str(candidate).split()[0].split('==')[0]
+
+
+def get_pip_command_action(command):
+    """Return pip action for a pip command."""
+    return command.split()[1]
+
+
+def get_pip_command_packages(command):
+    """Return packages included in a pip command."""
+    return command.split()[2:]
+
+
 def get_pip_history():
     """Get all pip commands logged in history."""
-    return [command for command in get_bash_history()
-            if command.strip().startswith('pip')]
+    commands = []
+    for line in get_bash_history():
+        for command in line.split(';'):
+            if command.strip().startswith('pip'):
+                commands.append(command)
+    return commands
 
 
 def get_bash_history():

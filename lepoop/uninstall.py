@@ -1,7 +1,9 @@
-"""Candidates for pip uninstallation utilities."""
+"""Uninstallation utilities for accidental `pip install`s"""
 
-from lepoop.utils import get_pip_history
-from lepoop.utils import get_package_groups
+from .utils import get_valid_pip_history
+from .utils import get_package_groups
+from .utils import get_pip_command_action
+from .utils import get_pip_command_packages
 from pipdeptree import build_dist_index
 from pipdeptree import construct_tree
 from pipdeptree import reverse_tree
@@ -22,13 +24,12 @@ def get_most_recent_packages_by_creation_time():
 
 def get_most_recent_packages_by_pip_history():
     """Get most recent packages as determined by pip history."""
-    pip_history = get_pip_history()
-    # TODO: add support for command in chain of commands e.g., <cmd>;pip ...
-    pip_install_history = [command for command in pip_history
-                           if command.strip().split()[1] == 'install']
+    pip_install_history = [command for command in get_valid_pip_history()
+                           if get_pip_command_action(command) == 'install']
     if not pip_install_history:
         return set()
-    packages = pip_install_history[0].split()[2:]
+    packages = [package.split('==')[0] for package in
+                get_pip_command_packages(pip_install_history[0])]
     return set(packages)
 
 
@@ -48,16 +49,10 @@ def get_uninstall_candidates():
     # Find packages that were recently installed.
     packages_by_module = get_most_recent_packages_by_creation_time()
     packages_by_history = get_most_recent_packages_by_pip_history()
+    package_keys = packages_by_history
     if not packages_by_module & packages_by_history:
-        pass  # TODO: disjoint sets, prompt user for which one to use
+        # TODO: disjoint sets, prompt user for which one to use
         package_keys = packages_by_module.union(packages_by_history)
-    else:
-        package_keys = packages_by_history
-
-    # Filter out uninstalled packages
-    all_package_keys = set(
-        str(p).split()[0] for p in pip.get_installed_distributions())
-    package_keys = all_package_keys.intersection(package_keys)
     assert package_keys, 'Already pooped.'
 
     # 2. Find all dependencies of these packages.
