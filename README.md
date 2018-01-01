@@ -80,4 +80,6 @@ Successfully installed coveralls-1.1 texsoup-0.1
 - `pip download`: Removes tarballs and wheels for the just-downloaded package and all its dependencies.
 - `pip uninstall`: Reinstall the package in question.
 
-Inspired by [nvbn](http://github.com/nvbn/)'s [The Fuck](http://github.com/nvbn/thefuck) (no affiliation).
+### Inspiration (Rated R) 🤭
+
+Inspired by [nvbn](http://github.com/nvbn/)'s [The Fuck](http://github.com/nvbn/thefuck) (no affiliation). I initially wanted to name this repository `The Shit`. The command-line utility would be `shit`, and if the app had no suggestions, it'd respond `no shit`. Ultimately decided to keep it PG. `Poop` is closer to `pip` in edit distance any how.
