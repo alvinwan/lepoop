@@ -1,3 +1,6 @@
+from colorama import init
+from colorama import Style
+from colorama import Fore
 import os
 import datetime
 import pip
@@ -8,7 +11,15 @@ from subprocess import STDOUT
 from collections import defaultdict
 
 
-__all__ = ('get_package_groups', 'get_pip_history')
+init()
+__all__ = ('get_package_groups', 'get_pip_history', 'print_colored')
+
+
+def colored(string):
+    """Print, coloring all code delimited with backticks."""
+    count = string.count('`') // 2
+    args = [Fore.GREEN + Style.BRIGHT, Style.RESET_ALL] * count
+    return string.replace('`', '{}').format(*args)
 
 
 def get_package_groups():

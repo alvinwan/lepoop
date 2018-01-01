@@ -4,7 +4,7 @@ from setuptools.command.test import test as TestCommand
 
 
 tests_require = ['pytest', 'pytest-cov==2.5.1', 'coverage == 3.7.1', 'coveralls == 1.1']
-install_requires = ['pipdeptree==0.10.1']
+install_requires = ['pipdeptree==0.10.1', 'colorama==0.3.9']
 
 
 class PyTest(TestCommand):
@@ -50,6 +50,7 @@ setup(
         "Topic :: Software Development :: Libraries",
     ],
     entry_points={'console_scripts': [
-        'poop = lepoop.main:main'
+        'lepoop = lepoop.entry.main:main',
+        'poop = lepoop.entry.not_configured:main'
     ]}
 )

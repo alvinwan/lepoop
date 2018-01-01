@@ -13,6 +13,8 @@ from itertools import chain
 def get_most_recent_packages_by_creation_time():
     """Get most recent packages as determined by module source create time."""
     package_groups = get_package_groups()
+    if not package_groups:
+        return set()
     time, packages = package_groups[0]
     packages = [pkg.split()[0] for pkg in packages]
     return set(packages)
@@ -24,6 +26,8 @@ def get_most_recent_packages_by_pip_history():
     # TODO: add support for command in chain of commands e.g., <cmd>;pip ...
     pip_install_history = [command for command in pip_history
                            if command.strip().split()[1] == 'install']
+    if not pip_install_history:
+        return set()
     packages = pip_install_history[0].split()[2:]
     return set(packages)
 
@@ -50,6 +54,12 @@ def get_uninstall_candidates():
     else:
         package_keys = packages_by_history
 
+    # Filter out uninstalled packages
+    all_package_keys = set(
+        str(p).split()[0] for p in pip.get_installed_distributions())
+    package_keys = all_package_keys.intersection(package_keys)
+    assert package_keys, 'Already pooped.'
+
     # 2. Find all dependencies of these packages.
     all_packages = pip.get_installed_distributions()
     dist_index = build_dist_index(all_packages)
@@ -57,12 +67,12 @@ def get_uninstall_candidates():
     dependencies = flatten([package.requires() for package in packages])
 
     # 3. Determine unneeded dependencies that were installed at roughly the
-    #    same time.
-    candidates = []
+    #    same time. # TODO: check time of installation
+    candidates = package_keys
     rtree = reverse_tree(construct_tree(dist_index))
     for dep in dependencies:
         node = find_tree_root(rtree, dep.key)
         leftover = {d.key for d in rtree[node] if d.key not in package_keys}
         if not leftover:
-            candidates.append(dep.key)
+            candidates.add(dep.key)
     return candidates
