@@ -71,7 +71,7 @@ pip install texsoup [enter/ctrl+c]
 Collecting texsoup
 Requirement already satisfied: coverage==3.7.1 in /Users/alvinwan/miniconda3/envs/py36/lib/python3.6/site-packages (from texsoup)
 ...
-Successfully installed coveralls-0.5 datascience-0.10.3 folium-0.1.5 sphinx-1.6.5
+Successfully installed coveralls-1.1 texsoup-0.1
 ```
 
 `Le Poop` supports undos for the only three `pip` commands it makes sense to undo:
