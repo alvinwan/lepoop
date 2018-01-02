@@ -16,7 +16,7 @@ poop_alias = """
 export PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND";
 
 function poop() {
-    lepoop;
+    lepoop $@;
     history -s poop;
 }
 """
