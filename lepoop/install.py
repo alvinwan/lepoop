@@ -56,7 +56,7 @@ def get_uninstall_dependencies_for(package_keys):
 
     # 2. Determine unneeded dependencies that were installed at roughly the
     #    same time. # TODO: check time of installation
-    candidates = package_keys
+    candidates = set(package_keys)
     rtree = reverse_tree(construct_tree(dist_index))
     for dep in dependencies:
         node = find_tree_root(rtree, dep.key)
@@ -75,12 +75,11 @@ def get_uninstall_candidates():
     # 1. Find packages that were recently installed.
     packages_by_module = get_most_recent_packages_by_creation_time()
     packages_by_history = get_most_recent_packages_by_pip_history()
-    package_keys = packages_by_history
-    if not packages_by_module & packages_by_history:
-        # TODO: disjoint sets, prompt user for which one to use
-        package_keys = packages_by_module.union(packages_by_history)
-    assert package_keys, 'Already pooped. (Possible uninstall candidates have' \
-                         'alreay been uninstalled.)'
+    package_keys = packages_by_module.union(packages_by_history)
+    all_packages = set(get_installed_package_keys())
+    package_keys = [p for p in package_keys if p in all_packages]
+    assert package_keys, 'Possible uninstall candidates have' \
+                         ' already been uninstalled.'
 
     # 2. Determine relevant dependencies.
     return get_uninstall_dependencies_for(package_keys)
