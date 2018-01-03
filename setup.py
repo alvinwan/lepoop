@@ -26,7 +26,7 @@ class PyTest(TestCommand):
         sys.exit(errno)
 
 
-VERSION = '0.1.1'
+VERSION = '0.1.2'
 
 
 setup(
@@ -37,7 +37,7 @@ setup(
     description="Allows you to undo pip commands",
     license="BSD",
     url="https://github.com/alvinwan/lepoop",
-    packages=['lepoop'],
+    packages=['lepoop', 'lepoop.entry'],
     cmdclass={
         'test': PyTest,
     },
