@@ -11,6 +11,7 @@ from subprocess import STDOUT
 from collections import defaultdict
 from itertools import chain
 import glob
+import functools
 
 
 init()
@@ -18,6 +19,17 @@ __all__ = ('get_package_groups', 'get_valid_pip_history', 'colored')
 
 
 flatten = chain.from_iterable
+
+
+def cache(f, history={}):
+    @functools.wraps(f)
+    def wrap(*args, **kwargs):
+        if 'result' in history:
+            return history['result']
+        result = f(*args, **kwargs)
+        history['result'] = result
+        return result
+    return wrap
 
 
 def colored(string):
@@ -44,12 +56,13 @@ def get_package_groups():
     return result
 
 
-def get_valid_pip_history():
+@cache
+def get_valid_pip_history(num_bash_entries=10):
     """Looks only at valid pip commands logged in history.
 
     See `is_valid_command` for details on `valid` commands.
     """
-    commands = get_pip_history()
+    commands = get_pip_history(num_bash_entries=num_bash_entries)
     for command in commands:
         if is_invalid_command(command):
             commands.remove(command)
@@ -106,22 +119,24 @@ def get_pip_command_packages(command):
     return command.split()[2:]
 
 
-def get_pip_history():
+def get_pip_history(num_bash_entries=10):
     """Get all pip commands logged in history."""
     commands = []
-    for line in get_bash_history():
+    for line in get_bash_history(num_bash_entries=num_bash_entries):
         for command in line.split(';'):
             if command.strip().startswith('pip'):
                 commands.append(command)
     return commands
 
 
-def get_bash_history():
+@cache
+def get_bash_history(num_bash_entries=10):
     """Get bash history.
 
     Items are sorted in reverse order, starting with the most recent.
     """
-    shell_command = 'bash -i -c "history -r; history"'
+    n = '' if num_bash_entries == '*' else str(num_bash_entries)
+    shell_command = 'bash -i -c "history -r; history %s"' % n
     event = Popen(shell_command, shell=True, stdin=PIPE, stdout=PIPE,
                   stderr=STDOUT)
     output, error = event.communicate()
