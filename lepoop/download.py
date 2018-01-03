@@ -5,7 +5,6 @@ from .utils import get_pip_command_action
 from subprocess import Popen
 from subprocess import PIPE
 from subprocess import STDOUT
-import os
 
 
 def get_file_candidates(prefix='File was already downloaded'):
